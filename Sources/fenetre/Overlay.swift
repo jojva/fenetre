@@ -39,10 +39,12 @@ final class OverlayController {
     let model = OverlayModel()
     private let panel: OverlayPanel
 
-    private let rowHeight: CGFloat = 56
-    private let verticalPadding: CGFloat = 16
+    private let rowHeight: CGFloat = 52
+    private let verticalPadding: CGFloat = 14
     private let panelWidth: CGFloat = 560
-    private let maxVisibleRows = 8
+    /// Grow to fit all windows, but never taller than this fraction of the
+    /// screen — beyond that the list scrolls (selection auto-scrolls into view).
+    private let maxHeightFraction: CGFloat = 0.85
 
     init() {
         // Frosted-glass background with rounded corners; SwiftUI list on top.
@@ -74,10 +76,10 @@ final class OverlayController {
         model.windows = windows
         model.selected = selected
 
-        let visibleRows = min(windows.count, maxVisibleRows)
-        let height = CGFloat(visibleRows) * rowHeight + verticalPadding
         let screen = targetScreen()
         let frame = screen.visibleFrame
+        let contentHeight = CGFloat(windows.count) * rowHeight + verticalPadding
+        let height = min(contentHeight, frame.height * maxHeightFraction)
         let origin = NSPoint(
             x: frame.midX - panelWidth / 2,
             y: frame.midY - height / 2
