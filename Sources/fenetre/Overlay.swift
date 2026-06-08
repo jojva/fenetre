@@ -47,14 +47,15 @@ final class OverlayController {
     private let maxHeightFraction: CGFloat = 0.85
 
     init() {
-        // Frosted-glass background with rounded corners; SwiftUI list on top.
+        // Frosted-glass background, clipped to rounded corners with a mask image.
+        // (A layer cornerRadius + masksToBounds leaves a faint square fringe at
+        // the corners because NSVisualEffectView's backdrop isn't clipped by the
+        // layer mask; a mask image clips the material cleanly.)
         let blur = NSVisualEffectView()
         blur.material = .hudWindow
         blur.blendingMode = .behindWindow
         blur.state = .active
-        blur.wantsLayer = true
-        blur.layer?.cornerRadius = 18
-        blur.layer?.masksToBounds = true
+        blur.maskImage = Self.roundedMaskImage(radius: 18)
 
         let host = NSHostingView(rootView: OverlayContentView(model: model))
         host.translatesAutoresizingMaskIntoConstraints = false
@@ -86,6 +87,7 @@ final class OverlayController {
         )
         panel.setFrame(NSRect(origin: origin, size: CGSize(width: panelWidth, height: height)), display: true)
         panel.orderFrontRegardless()
+        panel.invalidateShadow()
     }
 
     func move(by delta: Int) {
@@ -109,5 +111,19 @@ final class OverlayController {
         return NSScreen.screens.first { NSMouseInRect(mouse, $0.frame, false) }
             ?? NSScreen.main
             ?? NSScreen.screens[0]
+    }
+
+    /// A 9-slice rounded-rect mask used to clip the visual-effect material to
+    /// rounded corners. The cap insets keep the corners crisp at any panel size.
+    private static func roundedMaskImage(radius: CGFloat) -> NSImage {
+        let length = radius * 2 + 1
+        let image = NSImage(size: NSSize(width: length, height: length), flipped: false) { rect in
+            NSColor.black.setFill()
+            NSBezierPath(roundedRect: rect, xRadius: radius, yRadius: radius).fill()
+            return true
+        }
+        image.capInsets = NSEdgeInsets(top: radius, left: radius, bottom: radius, right: radius)
+        image.resizingMode = .stretch
+        return image
     }
 }
