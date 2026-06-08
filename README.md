@@ -2,6 +2,8 @@
 
 A minimal macOS window switcher — a personal replacement for [AltTab.app](https://alt-tab-macos.netlify.app/).
 
+<img width="623" height="483" alt="Screenshot 2026-06-08 at 23 03 46" src="https://github.com/user-attachments/assets/13e60263-356f-4038-afd1-2798a6111a18" />
+
 ## Why
 
 The built-in ⌘-Tab only switches between *apps*. `fenêtre` switches between
@@ -11,7 +13,8 @@ individual *windows* across all apps, which is the whole point.
 
 - **Swift + AppKit** (Xcode project).
 
-The entire app is macOS-framework glue — Accessibility API, an AppKit overlay,
+The entire app is mac
+OS-framework glue — Accessibility API, an AppKit overlay,
 and (later) ScreenCaptureKit — so Swift is the path of least resistance and has
 first-class access to every API involved. Rust was considered and dropped: it
 would be pure FFI tax with no portability payoff, since every line is
