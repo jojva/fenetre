@@ -45,16 +45,16 @@ final class WindowEnumerator {
                   let axWindows = value as? [AXUIElement] else {
                 continue
             }
-            let appName = displayName(for: app)
             for window in axWindows where isStandardWindow(window) {
-                let title = stringAttribute(window, kAXTitleAttribute) ?? ""
+                let rawTitle = stringAttribute(window, kAXTitleAttribute) ?? ""
+                let label = labels(for: app, rawTitle: rawTitle)
                 result.append(
                     WindowInfo(
                         pid: app.processIdentifier,
                         app: app,
-                        appName: appName,
+                        appName: label.app,
                         icon: app.icon,
-                        title: title,
+                        title: label.window,
                         axWindow: window,
                         windowID: cgWindowID(of: window) ?? 0
                     )
@@ -107,16 +107,43 @@ final class WindowEnumerator {
 
     // MARK: - App display name (Firefox per-profile labelling)
 
-    /// The label shown for an app. Firefox runs one process per profile (each
-    /// launched with e.g. `-P algolia`), so we append the profile name to tell
-    /// "Firefox algolia" and "Firefox perso" apart instead of two bare "Firefox".
-    private func displayName(for app: NSRunningApplication) -> String {
+    /// App label and window name, disambiguated where a bare app name hides
+    /// useful context:
+    /// - Firefox runs one process per profile (`-P algolia`) → append profile.
+    /// - VS Code is one process with many windows → move the workspace/folder
+    ///   from the window title up into the app label (so it isn't shown twice).
+    private func labels(for app: NSRunningApplication, rawTitle: String) -> (app: String, window: String) {
         let base = app.localizedName ?? "Unknown"
-        guard app.bundleIdentifier?.hasPrefix("org.mozilla.") == true,
-              let profile = launchProfile(pid: app.processIdentifier) else {
-            return base
+        let bundleID = app.bundleIdentifier ?? ""
+
+        if bundleID.hasPrefix("org.mozilla."), let profile = launchProfile(pid: app.processIdentifier) {
+            return ("\(base) \(profile)", rawTitle)
         }
-        return "\(base) \(profile)"
+
+        if bundleID.hasPrefix("com.microsoft.VSCode"), let parsed = parseVSCodeTitle(rawTitle) {
+            return ("\(base) — \(parsed.folder)", parsed.window)
+        }
+
+        return (base, rawTitle)
+    }
+
+    /// Split a VS Code window title ("Accessibility.swift - fenetre") into its
+    /// trailing workspace/folder and the remaining window name. Handles " - "
+    /// and " — " separators and a trailing app-name segment. Returns nil if no
+    /// folder segment is present. When the folder is the only segment (no file
+    /// open), it's kept as the window name rather than leaving it blank.
+    private func parseVSCodeTitle(_ title: String) -> (folder: String, window: String)? {
+        let normalized = title.replacingOccurrences(of: " — ", with: " - ")
+        var segments = normalized.components(separatedBy: " - ").map {
+            $0.trimmingCharacters(in: .whitespaces)
+        }
+        if let last = segments.last, last == "Visual Studio Code" || last == "Code" {
+            segments.removeLast()
+        }
+        guard let folder = segments.last, !folder.isEmpty else { return nil }
+        segments.removeLast()
+        let window = segments.joined(separator: " - ")
+        return (folder, window.isEmpty ? folder : window)
     }
 
     /// Extract the Firefox profile from a process's launch arguments
