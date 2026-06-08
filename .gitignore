@@ -13,5 +13,8 @@ xcuserdata/
 .build/
 .swiftpm/
 
+# Built app bundle
+*.app/
+
 # Editor
 *.swp
