@@ -23,8 +23,9 @@ APP      := $(BUNDLE_NAME).app
 CONTENTS := $(APP)/Contents
 MACOS    := $(CONTENTS)/MacOS
 BIN      := .build/$(CONFIG)/$(APP_NAME)
+INSTALL_DIR := /Applications
 
-.PHONY: build bundle run logs kill clean
+.PHONY: build bundle run logs install kill clean
 
 # build  — compile the Swift package
 build:
@@ -51,6 +52,15 @@ logs: bundle kill
 	@sleep 1
 	@echo "── tailing /tmp/fenetre.log  (Ctrl-C stops tailing; app keeps running) ──"
 	@tail -F /tmp/fenetre.log
+
+# install — build the signed bundle and copy it to /Applications, for daily use
+#           + Login Items. Re-run to update the installed copy after changes.
+install: bundle
+	@rm -rf "$(INSTALL_DIR)/$(APP)"
+	@ditto "$(APP)" "$(INSTALL_DIR)/$(APP)"
+	@echo "✔ Installed $(INSTALL_DIR)/$(APP)"
+	@echo "  → Add it in System Settings ▸ General ▸ Login Items, and grant"
+	@echo "    Accessibility for this copy the first time you launch it."
 
 # kill   — terminate any running fenêtre instance (prevents stale duplicates)
 kill:
