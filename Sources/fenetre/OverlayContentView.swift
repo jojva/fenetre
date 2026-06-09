@@ -58,18 +58,40 @@ struct RowView: View {
 
     @ViewBuilder
     private var icon: some View {
+        iconImage
+            .frame(width: 36, height: 36)
+            .overlay(alignment: .topTrailing) { badge }
+    }
+
+    @ViewBuilder
+    private var iconImage: some View {
         if let nsImage = window.icon {
             Image(nsImage: nsImage)
                 .resizable()
                 .interpolation(.high)
-                .frame(width: 36, height: 36)
         } else {
             Image(systemName: "macwindow")
                 .resizable()
                 .scaledToFit()
-                .frame(width: 28, height: 28)
-                .frame(width: 36, height: 36)
+                .padding(4)
                 .foregroundStyle(.secondary)
+        }
+    }
+
+    /// Red unread-count bubble (e.g. Slack mentions), pulled from the app's
+    /// Dock badge. Nudged outward so it sits on the icon's corner.
+    @ViewBuilder
+    private var badge: some View {
+        if let badge = window.badge {
+            Text(badge)
+                .font(.system(size: 10, weight: .medium))
+                .monospacedDigit()
+                .foregroundStyle(.white)
+                .padding(.horizontal, 4)
+                .frame(minWidth: 16, minHeight: 16)
+                .background(Capsule(style: .circular).fill(Color.red))
+                .fixedSize()
+                .offset(x: 3, y: -2)
         }
     }
 }

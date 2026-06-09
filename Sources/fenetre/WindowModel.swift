@@ -18,6 +18,9 @@ struct WindowInfo: Identifiable {
     let appName: String
     let icon: NSImage?
     let title: String
+    /// Dock notification badge for the app (e.g. Slack's unread count), or nil.
+    /// App-level, so all of an app's windows share it.
+    let badge: String?
     let axWindow: AXUIElement
     let windowID: CGWindowID
 }
@@ -34,6 +37,7 @@ final class WindowEnumerator {
     /// Snapshot of all standard windows, most-recently-used first.
     func windows() -> [WindowInfo] {
         let zOrder = onScreenZOrder()
+        let badges = DockBadges.read()
         let regularApps = NSWorkspace.shared.runningApplications
             .filter { $0.activationPolicy == .regular }
 
@@ -55,6 +59,7 @@ final class WindowEnumerator {
                         appName: label.app,
                         icon: app.icon,
                         title: label.window,
+                        badge: badges.badge(for: app),
                         axWindow: window,
                         windowID: cgWindowID(of: window) ?? 0
                     )
